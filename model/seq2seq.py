@@ -50,8 +50,8 @@ class Seq2seq:
         # Define an input sequence and process it.
         encoder_inputs = Input(shape=(self.data.max_encoder_seq_length,))
         embeddings = Embedding(self.data.num_encoder_tokens, self.embedding_dim)(encoder_inputs)
-        encoder = CuDNNLSTM(self.latent_dim, return_state=True, return_sequences=True)
-        # encoder = LSTM(self.latent_dim, return_state=True, return_sequences=True)
+        # encoder = CuDNNLSTM(self.latent_dim, return_state=True, return_sequences=True)
+        encoder = LSTM(self.latent_dim, return_state=True, return_sequences=True)
         encoder_outputs = encoder(embeddings)
         encoder_model = Model(encoder_inputs, encoder_outputs)
         encoder_model.summary()
@@ -63,8 +63,8 @@ class Seq2seq:
         decoder_state_input_c = Input(shape=(self.latent_dim,))
         encoder_outputs = Input(shape=(self.data.max_encoder_seq_length, self.latent_dim))
         embeddings = Embedding(self.data.num_decoder_tokens, self.embedding_dim)(decoder_inputs)
-        decoder_lstm = CuDNNLSTM(self.latent_dim, return_sequences=True, return_state=True)
-        # decoder_lstm = LSTM(self.latent_dim, return_sequences=True, return_state=True)
+        # decoder_lstm = CuDNNLSTM(self.latent_dim, return_sequences=True, return_state=True)
+        decoder_lstm = LSTM(self.latent_dim, return_sequences=True, return_state=True)
         decoder_outputs, state_h, state_c = decoder_lstm(embeddings,
                                                          initial_state=[decoder_state_input_h, decoder_state_input_c])
         attn_layer = AttentionLayer(name='attention_layer')
