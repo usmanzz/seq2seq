@@ -5,7 +5,7 @@ from sklearn.model_selection import train_test_split
 
 class DatasetHandler:
 
-    def __init__(self, encoder_tokenizer, decoder_tokenizer, split=0.9):
+    def __init__(self, encoder_tokenizer, decoder_tokenizer, split=0.1):
         self.encoder_tokenizer = encoder_tokenizer
         self.decoder_tokenizer = decoder_tokenizer
         self.num_decoder_tokens = self.decoder_tokenizer.num_tokens

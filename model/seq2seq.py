@@ -24,7 +24,7 @@ class Seq2seq:
         decoded_output, state_h, state_c = self.decoder([decoder_inputs, encoder_outputs, e_state_h, e_state_c])
         self.auto_encoder = Model([encoder_inputs, decoder_inputs], decoded_output)
         self.auto_encoder.compile(optimizer='rmsprop', loss='sparse_categorical_crossentropy')
-        self.auto_encoder.summary()
+        # self.auto_encoder.summary()
 
     def train(self, source, inp_targets, targets, batch_size=100, epochs=100):
         self.auto_encoder.fit([source, inp_targets], targets,
@@ -50,21 +50,21 @@ class Seq2seq:
         # Define an input sequence and process it.
         encoder_inputs = Input(shape=(self.data.max_encoder_seq_length,))
         embeddings = Embedding(self.data.num_encoder_tokens, self.embedding_dim)(encoder_inputs)
-        # encoder = CuDNNLSTM(self.latent_dim, return_state=True, return_sequences=True)
-        encoder = LSTM(self.latent_dim, return_state=True, return_sequences=True)
+        encoder = CuDNNLSTM(self.latent_dim, return_state=True, return_sequences=True)
+        # encoder = LSTM(self.latent_dim, return_state=True, return_sequences=True)
         encoder_outputs = encoder(embeddings)
         encoder_model = Model(encoder_inputs, encoder_outputs)
-        # encoder_model.summary()
+        encoder_model.summary()
         return encoder_model
 
     def get_decoder(self):
         decoder_inputs = Input(shape=(None,))
         decoder_state_input_h = Input(shape=(self.latent_dim,))
         decoder_state_input_c = Input(shape=(self.latent_dim,))
-        encoder_outputs = Input(shape=(self.data.num_encoder_tokens, self.latent_dim))
-        embeddings = Embedding(self.data.num_encoder_tokens, self.embedding_dim)(decoder_inputs)
-        # decoder_lstm = CuDNNLSTM(self.latent_dim, return_sequences=True, return_state=True)
-        decoder_lstm = LSTM(self.latent_dim, return_sequences=True, return_state=True)
+        encoder_outputs = Input(shape=(self.data.max_encoder_seq_length, self.latent_dim))
+        embeddings = Embedding(self.data.num_decoder_tokens, self.embedding_dim)(decoder_inputs)
+        decoder_lstm = CuDNNLSTM(self.latent_dim, return_sequences=True, return_state=True)
+        # decoder_lstm = LSTM(self.latent_dim, return_sequences=True, return_state=True)
         decoder_outputs, state_h, state_c = decoder_lstm(embeddings,
                                                          initial_state=[decoder_state_input_h, decoder_state_input_c])
         attn_layer = AttentionLayer(name='attention_layer')
@@ -75,7 +75,7 @@ class Seq2seq:
         decoded_output = TimeDistributed(decoder_dense)(context_vectors)
         decoder_model = Model([decoder_inputs, encoder_outputs, decoder_state_input_h, decoder_state_input_c],
                               [decoded_output, state_h, state_c])
-        # decoder_model.summary()
+        decoder_model.summary()
         return decoder_model
 
     def decode_seq(self, input_seq):
