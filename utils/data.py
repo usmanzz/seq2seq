@@ -1,5 +1,5 @@
 # import numpy as np
-from utils.tokenizer import EngTokenizer, FraTokenizer
+from ..utils.tokenizer import EngTokenizer, FraTokenizer
 from sklearn.model_selection import train_test_split
 
 
