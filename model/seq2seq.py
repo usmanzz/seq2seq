@@ -2,12 +2,9 @@ from __future__ import print_function
 from tensorflow.python.keras.layers import Input, Dense, CuDNNLSTM, TimeDistributed, Concatenate, LSTM, Embedding
 from tensorflow.python.keras.models import Model
 import numpy as np
-try:
-    from layers.attention import AttentionLayer
-    from utils.data import Eng2Fra
-except:
-    from .layers.attention import AttentionLayer
-    from .utils.data import Eng2Fra
+
+from .layers.attention import AttentionLayer
+from .utils.data import Eng2Fra
 
 
 class Seq2seq:
