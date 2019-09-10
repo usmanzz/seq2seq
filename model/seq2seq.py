@@ -4,7 +4,9 @@ from tensorflow.python.keras.models import Model
 import numpy as np
 
 from ..layers.attention import AttentionLayer
-from ..utils.data import Eng2Fra
+
+
+# from ..utils.data import Eng2Fra
 
 
 class Seq2seq:
@@ -26,18 +28,20 @@ class Seq2seq:
         self.auto_encoder.compile(optimizer='rmsprop', loss='sparse_categorical_crossentropy')
         # self.auto_encoder.summary()
 
-    def train(self, source, inp_targets, targets, batch_size=100, epochs=100):
+    def train(self, num_instances=10000, batch_size=100, epochs=100):
+        source, inp_targets, targets = self.data.get_train(num_instances)
         self.auto_encoder.fit([source, inp_targets], targets,
                               batch_size=batch_size,
                               epochs=epochs,
-                              validation_split=0.2)
+                              validation_split=0.1)
 
-    def test(self, source, target):
+    def test(self, num_instances=100):
+        source, target, = self.data.get_test(num_instances)
         for ind, input_seq in enumerate(source):
             decoded_sentence = self.decode_seq(input_seq)
             print('-')
-            print('Input sentence:', self.data.encoder_tokenizer.nums2seq(target[ind]))
-            print('targrt sentence:', self.data.decoder_tokenizer.nums2seq(input_seq))
+            print('Input sentence:', self.data.encoder_tokenizer.nums2seq(source[ind]))
+            print('targrt sentence:', self.data.decoder_tokenizer.nums2seq(target[ind]))
             print('Decoded sentence:', decoded_sentence)
 
     def save(self, name="s2s"):
@@ -79,14 +83,10 @@ class Seq2seq:
         return decoder_model
 
     def decode_seq(self, input_seq):
-        e_out, dsh, dsc = self.encoder.predict(input_seq)
+        e_out, dsh, dsc = self.encoder.predict(input_seq.reshape((1, -1)))
         # Generate empty target sequence of length 1.
-        target_seq = np.zeros((1, 1))
-        # Populate the first character of target sequence with the start character.
-        target_seq[0, 0] = self.data.decoder_tokenizer.start_tkn
-        #     print(target_seq.shape)
+        target_seq = np.array([[self.data.decoder_tokenizer.start_tkn]])
         # Sampling loop for a batch of sequences
-        # (to simplify, here we assume a batch of size 1).
         stop_condition = False
         decoded_sentence = []
         while not stop_condition:
@@ -94,10 +94,9 @@ class Seq2seq:
             # Sample a token
             sampled_token_index = np.argmax(output_tokens[0, -1, :])
             decoded_sentence.append(sampled_token_index)
-            # Exit condition: either hit max length
-            # or find stop character.
-            if (sampled_token_index == self.data.decoder_tokenizer.end or
-                    len(decoded_sentence) > self.data.max_decoder_seq_length):
+            # Exit condition: either hit max length or find stop character.
+            if (sampled_token_index == self.data.decoder_tokenizer.end or len(
+                    decoded_sentence) > self.data.max_decoder_seq_length):
                 stop_condition = True
             target_seq = np.array([[sampled_token_index]])
         return self.data.decoder_tokenizer.nums2seq(decoded_sentence)

@@ -9,8 +9,9 @@ os.system('python -c "import thinc.neural.gpu_ops"')
 
 class SeqTokenizer(metaclass=ABCMeta):
 
-    def __init__(self, examples=[]):
+    def __init__(self, examples, is_encoder):
         self.examples = examples
+        self.is_encoder = is_encoder
         self.start = "<s>"
         self.end = "<e>"
         self.start_tkn = 1
@@ -45,7 +46,7 @@ class SeqTokenizer(metaclass=ABCMeta):
         seq_length = len(seq_tokens) + 2
         if seq_length > self.max_seq_len:
             self.max_seq_len = seq_length
-        return self.add_boarder_token(seq_tokens)
+        return seq_tokens if self.is_encoder else self.add_boarder_token(seq_tokens)
 
     def seq2nums(self, sequence):
         return [self.vocab[word] for word in sequence]
@@ -62,9 +63,9 @@ class SeqTokenizer(metaclass=ABCMeta):
 
 class EngTokenizer(SeqTokenizer):
 
-    def __init__(self, examples):
+    def __init__(self, examples, is_encoder=False):
         self.eng = spacy.load('en')
-        super().__init__(examples)
+        super().__init__(examples, is_encoder)
 
     def tokenize_seq(self, seq):
         return [str(word) for word in self.eng(seq)]
@@ -72,9 +73,9 @@ class EngTokenizer(SeqTokenizer):
 
 class FraTokenizer(SeqTokenizer):
 
-    def __init__(self, examples):
+    def __init__(self, examples, is_encoder=False):
         self.fra = spacy.load('fr')
-        super().__init__(examples)
+        super().__init__(examples, is_encoder)
 
     def tokenize_seq(self, seq):
         return [str(word) for word in self.fra(seq)]

@@ -5,7 +5,7 @@ from sklearn.model_selection import train_test_split
 
 class DatasetHandler:
 
-    def __init__(self, encoder_tokenizer, decoder_tokenizer, split=0.1):
+    def __init__(self, encoder_tokenizer, decoder_tokenizer, split=0.05):
         self.encoder_tokenizer = encoder_tokenizer
         self.decoder_tokenizer = decoder_tokenizer
         self.num_decoder_tokens = self.decoder_tokenizer.num_tokens
@@ -18,17 +18,17 @@ class DatasetHandler:
             test_size=split,
             random_state=42)
 
-    def get_train(self):
-        return self.source_train, self.target_train[:, :-1], self.target_train[:, 1:]
+    def get_train(self, num_instances=10000):
+        return self.source_train[:num_instances], self.target_train[:num_instances, :-1], self.target_train[:num_instances, 1:]
 
-    def get_test(self):
-        return self.source_test, self.target_test[:, :-1], self.target_test[:, 1:]
+    def get_test(self, num_instances=100):
+        return self.source_test[:num_instances], self.target_test[:num_instances, :-1], self.target_test[:num_instances, 1:]
 
 
 class Eng2Fra(DatasetHandler):
 
     def __init__(self, english_sentences, french_sentences):
-        encoder_tokenizer = EngTokenizer(english_sentences)
+        encoder_tokenizer = EngTokenizer(english_sentences, is_encoder=True)
         decoder_tokenizer = FraTokenizer(french_sentences)
         super().__init__(encoder_tokenizer, decoder_tokenizer)
 
@@ -36,6 +36,6 @@ class Eng2Fra(DatasetHandler):
 class Fra2Eng(DatasetHandler):
 
     def __init__(self, english_sentences, french_sentences):
-        encoder_tokenizer = FraTokenizer(french_sentences)
+        encoder_tokenizer = FraTokenizer(french_sentences, is_encoder=True)
         decoder_tokenizer = EngTokenizer(english_sentences)
         super().__init__(encoder_tokenizer, decoder_tokenizer)
