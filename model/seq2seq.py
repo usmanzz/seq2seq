@@ -12,7 +12,7 @@ class Seq2seq:
     def __init__(self, latent_dim, data, embedding_dim=100):
         self.latent_dim = latent_dim
         self.embedding_dim = embedding_dim
-        self.data = Eng2Fra()
+        self.data = data
         self.encoder = self.get_encoder()
         self.decoder = self.get_decoder()
 
