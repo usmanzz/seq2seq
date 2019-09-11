@@ -28,17 +28,17 @@ class FraTokenizer(SeqTokenizer):
 
 class Eng2Fra(DatasetHandler):
 
-    def __init__(self, english_sentences, french_sentences):
-        encoder_tokenizer = EngTokenizer(english_sentences, is_encoder=True)
-        decoder_tokenizer = FraTokenizer(french_sentences)
+    def __init__(self, english_sentences, french_sentences, num_instances=10000):
+        encoder_tokenizer = EngTokenizer(english_sentences[:num_instances], is_encoder=True)
+        decoder_tokenizer = FraTokenizer(french_sentences[:num_instances])
         super().__init__(encoder_tokenizer, decoder_tokenizer)
 
 
 class Fra2Eng(DatasetHandler):
 
-    def __init__(self, english_sentences, french_sentences):
-        encoder_tokenizer = FraTokenizer(french_sentences, is_encoder=True)
-        decoder_tokenizer = EngTokenizer(english_sentences)
+    def __init__(self, english_sentences, french_sentences, num_instances=10000):
+        encoder_tokenizer = FraTokenizer(french_sentences[:num_instances], is_encoder=True)
+        decoder_tokenizer = EngTokenizer(english_sentences[:num_instances])
         super().__init__(encoder_tokenizer, decoder_tokenizer)
 
 
