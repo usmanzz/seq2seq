@@ -1,7 +1,7 @@
 from __future__ import print_function
-from tensorflow.python.keras.layers import Input, Dense, CuDNNLSTM, TimeDistributed, Concatenate, LSTM, Embedding
-from tensorflow.python.keras.layers.wrappers import Bidirectional
-from tensorflow.python.keras.models import Model
+from tensorflow.keras.layers import Input, Dense, CuDNNLSTM, TimeDistributed, Concatenate, LSTM, Embedding
+from tensorflow.keras.layers import Bidirectional
+from tensorflow.keras.models import Model
 import numpy as np
 from abc import ABCMeta, abstractmethod
 from ..layers.attention import AttentionLayer
