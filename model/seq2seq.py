@@ -166,15 +166,15 @@ class BiSeq2seqAttention(EncoderDecoder):
 
     def get_decoder(self):
         decoder_inputs = Input(shape=(None,))
+        encoder_outputs = Input(shape=(self.data.max_encoder_seq_length, self.latent_dim))
         dsh = Input(shape=(self.latent_dim,))
         dsc = Input(shape=(self.latent_dim,))
         dsh1 = Input(shape=(self.latent_dim,))
         dsc1 = Input(shape=(self.latent_dim,))
-        encoder_outputs = Input(shape=(self.data.max_encoder_seq_length, self.latent_dim))
         embeddings = Embedding(self.data.num_decoder_tokens, self.embedding_dim)(decoder_inputs)
         # decoder_lstm = CuDNNLSTM(self.latent_dim, return_sequences=True, return_state=True)
         decoder_lstm = LSTM(self.latent_dim, return_sequences=True, return_state=True)
-        outputs = Bidirectional(decoder_lstm)(embeddings, initial_state=[dsh, dsc, dsh1, dsc1])
+        outputs = Bidirectional(decoder_lstm, merge_mode="mul")(embeddings, initial_state=[dsh, dsc, dsh1, dsc1])
         decoder_outputs = outputs[0]
         attn_layer = AttentionLayer(name='attention_layer')
         # print(encoder_outputs.shape, decoder_outputs.shape)
