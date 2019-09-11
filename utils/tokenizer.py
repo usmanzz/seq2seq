@@ -52,7 +52,7 @@ class SeqTokenizer(metaclass=ABCMeta):
 
     """implement this if you want different view"""
     def view_data(self, data):
-        for target, decoded in list(zip(data)):
+        for target, decoded in list(zip(*data)):
             print('-')
             print('Target sentence:', " ".join(self.nums2seq(target)))
             print('Decoded sentence:', " ".join(self.nums2seq(decoded)))

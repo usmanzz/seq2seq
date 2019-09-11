@@ -24,7 +24,7 @@ class EncoderDecoder(metaclass=ABCMeta):
                           validation_split=0.1)
 
     def test(self, num_instances=100):
-        source, target, = self.data.get_test(num_instances)
+        source, target, _ = self.data.get_test(num_instances)
         decoded = self.decode_seq(source)
         self.data.decoder_tokenizer.view_data((target, decoded))
 
@@ -83,20 +83,14 @@ class Seq2seq(EncoderDecoder):
 
     def decode_seq(self, input_seq):
         e_out, dsh, dsc = self.encoder.predict(input_seq)
-        # Generate empty target sequence of length 1.
-        target_seq = np.ones((input_seq.shpe[0], 1))
+        target_seq = np.ones((input_seq.shape[0], 1))
         target_seq = target_seq * [self.data.decoder_tokenizer.start_tkn]
         # Sampling loop for a batch of sequences
-        stop_condition = False
         decoded = None
-        while not stop_condition:
+        for _ in range(self.data.max_decoder_seq_length):
             output_tokens, dsh, dsc = self.decoder.predict([target_seq, dsh, dsc])
-            # Sample a token
-            sampled = np.argmax(output_tokens, axis=1)
-            decoded = sampled if decoded is None else np.vstack(decoded, sampled)
-            # Exit condition: hit max length
-            if len(decoded) > self.data.max_decoder_seq_length:
-                stop_condition = True
+            sampled = np.argmax(output_tokens, axis=2)
+            decoded = sampled if decoded is None else np.hstack((decoded, sampled))
             target_seq = sampled
         return decoded
 
@@ -134,23 +128,17 @@ class Seq2seqAttention(EncoderDecoder):
         return decoder_model
 
     def decode_seq(self, input_seq):
-        e_out, dsh, dsc = self.encoder.predict(input_seq.reshape((1, -1)))
-        # Generate empty target sequence of length 1.
-        target_seq = np.array([[self.data.decoder_tokenizer.start_tkn]])
+        e_out, dsh, dsc = self.encoder.predict(input_seq)
+        target_seq = np.ones((input_seq.shape[0], 1))
+        target_seq = target_seq * [self.data.decoder_tokenizer.start_tkn]
         # Sampling loop for a batch of sequences
-        stop_condition = False
-        decoded_sentence = []
-        while not stop_condition:
+        decoded = None
+        for _ in range(self.data.max_decoder_seq_length):
             output_tokens, dsh, dsc = self.decoder.predict([target_seq, e_out, dsh, dsc])
-            # Sample a token
-            sampled_token_index = np.argmax(output_tokens[0, -1, :])
-            decoded_sentence.append(sampled_token_index)
-            # Exit condition: either hit max length or find stop character.
-            if (sampled_token_index == self.data.decoder_tokenizer.end or len(
-                    decoded_sentence) > self.data.max_decoder_seq_length):
-                stop_condition = True
-            target_seq = np.array([[sampled_token_index]])
-        return self.data.decoder_tokenizer.nums2seq(decoded_sentence)
+            sampled = np.argmax(output_tokens, axis=2)
+            decoded = sampled if decoded is None else np.hstack((decoded, sampled))
+            target_seq = sampled
+        return decoded
 
 
 class BiSeq2seqAttention(EncoderDecoder):
@@ -200,20 +188,14 @@ class BiSeq2seqAttention(EncoderDecoder):
         return decoder_model
 
     def decode_seq(self, input_seq):
-        e_out = self.encoder.predict(input_seq.reshape((1, -1)))
-        # Generate empty target sequence of length 1.
-        target_seq = np.array([[self.data.decoder_tokenizer.start_tkn]])
+        e_out, dsh, dsc, dsh1, dsc1 = self.encoder.predict(input_seq)
+        target_seq = np.ones((input_seq.shape[0], 1))
+        target_seq = target_seq * [self.data.decoder_tokenizer.start_tkn]
         # Sampling loop for a batch of sequences
-        stop_condition = False
-        decoded_sentence = []
-        while not stop_condition:
-            output_tokens, dsh, dsc = self.decoder.predict([target_seq] + e_out)
-            # Sample a token
-            sampled_token_index = np.argmax(output_tokens[0, -1, :])
-            decoded_sentence.append(sampled_token_index)
-            # Exit condition: either hit max length or find stop character.
-            if (sampled_token_index == self.data.decoder_tokenizer.end or len(
-                    decoded_sentence) > self.data.max_decoder_seq_length):
-                stop_condition = True
-            target_seq = np.array([[sampled_token_index]])
-        return self.data.decoder_tokenizer.nums2seq(decoded_sentence)
+        decoded = None
+        for _ in range(self.data.max_decoder_seq_length):
+            output_tokens, dsh, dsc, dsh1, dsc1 = self.decoder.predict([target_seq, e_out, dsh, dsc, dsh1, dsc1])
+            sampled = np.argmax(output_tokens, axis=2)
+            decoded = sampled if decoded is None else np.hstack((decoded, sampled))
+            target_seq = sampled
+        return decoded
