@@ -39,7 +39,7 @@ class EncoderDecoder(metaclass=ABCMeta):
         encoder_inputs = Input(shape=(self.data.max_encoder_seq_length,))
         embeddings = Embedding(self.data.num_encoder_tokens, self.embedding_dim)(encoder_inputs)
         # encoder = CuDNNLSTM(self.latent_dim, return_state=True, return_sequences=True)
-        encoder = LSTM(self.latent_dim, return_state=True)
+        encoder = LSTM(self.latent_dim, return_state=True, return_sequences=True)
         encoder_outputs = encoder(embeddings)
         encoder_model = Model(encoder_inputs, encoder_outputs)
         encoder_model.summary()
