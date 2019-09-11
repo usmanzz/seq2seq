@@ -61,6 +61,6 @@ class SeqTokenizer(metaclass=ABCMeta):
         self.seqs[indices]
 
     def add_boarder_token(self, seq):
-        print([self.start_tkn] + seq + [self.end_tkn])
+        # print([self.start_tkn] + seq + [self.end_tkn])
         return [self.start_tkn] + seq + [self.end_tkn]
 
