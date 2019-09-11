@@ -147,9 +147,9 @@ class BiSeq2seqAttention(EncoderDecoder):
         super().__init__(latent_dim, data, embedding_dim)
         encoder_inputs = Input(shape=(self.data.max_encoder_seq_length,))
         decoder_inputs = Input(shape=(None,))
-        encoder_outputs = self.encoder(encoder_inputs)
-        decoded_output = self.decoder([decoder_inputs] + encoder_outputs)
-        self.combined = Model([encoder_inputs, decoder_inputs], decoded_output[0])
+        e_out, esh, esc, esh1, esc1 = self.encoder(encoder_inputs)
+        decoded_output, _, _, _, _ = self.decoder([decoder_inputs, e_out, esh, esc, esh1, esc1])
+        self.combined = Model([encoder_inputs, decoder_inputs], decoded_output)
         self.combined.compile(optimizer='rmsprop', loss='sparse_categorical_crossentropy')
         # self.auto_encoder.summary()
 
