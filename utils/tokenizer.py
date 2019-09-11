@@ -29,7 +29,7 @@ class SeqTokenizer(metaclass=ABCMeta):
 
     def process_data(self):
         processed = [self.add_seq(self.tokenize_seq(seq)) for seq in self.examples]
-        bt = len(self.vocab.keys())
+        bt = len(self.vocab.keys())+1
         self.vocab.update({word: ind + bt for ind, word in enumerate(sorted(list(set(self._tokens))))})
         self.num_tokens = len(self.vocab.keys())
         self.reverse_index = {ind: word for word, ind in self.vocab.items()}
