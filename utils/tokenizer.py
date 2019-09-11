@@ -23,7 +23,6 @@ class SeqTokenizer(metaclass=ABCMeta):
     """
         Tokenize each instance
         """
-
     @abstractmethod
     def tokenize_seq(self, seq):
         return seq
@@ -39,7 +38,7 @@ class SeqTokenizer(metaclass=ABCMeta):
 
     def add_seq(self, seq_tokens):
         self._tokens.extend(seq_tokens)
-        seq_length = len(seq_tokens) + 2 if self.is_encoder else 0
+        seq_length = len(seq_tokens) + (2 if self.is_encoder else 0)
         if seq_length > self.max_seq_len:
             self.max_seq_len = seq_length
         return seq_tokens
@@ -62,5 +61,6 @@ class SeqTokenizer(metaclass=ABCMeta):
         self.seqs[indices]
 
     def add_boarder_token(self, seq):
+        print([self.start_tkn] + seq + [self.end_tkn])
         return [self.start_tkn] + seq + [self.end_tkn]
 
