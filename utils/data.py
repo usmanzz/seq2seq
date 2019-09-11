@@ -1,5 +1,4 @@
 # import numpy as np
-from ..utils.tokenizer import EngTokenizer, FraTokenizer
 from sklearn.model_selection import train_test_split
 
 
@@ -24,18 +23,3 @@ class DatasetHandler:
     def get_test(self, num_instances=100):
         return self.source_test[:num_instances], self.target_test[:num_instances, :-1], self.target_test[:num_instances, 1:]
 
-
-class Eng2Fra(DatasetHandler):
-
-    def __init__(self, english_sentences, french_sentences):
-        encoder_tokenizer = EngTokenizer(english_sentences, is_encoder=True)
-        decoder_tokenizer = FraTokenizer(french_sentences)
-        super().__init__(encoder_tokenizer, decoder_tokenizer)
-
-
-class Fra2Eng(DatasetHandler):
-
-    def __init__(self, english_sentences, french_sentences):
-        encoder_tokenizer = FraTokenizer(french_sentences, is_encoder=True)
-        decoder_tokenizer = EngTokenizer(english_sentences)
-        super().__init__(encoder_tokenizer, decoder_tokenizer)

@@ -1,5 +1,5 @@
 from model.seq2seq import Seq2seq
-from utils.data import Eng2Fra, Fra2Eng
+from examples.nmt import Eng2Fra, Fra2Eng
 
 # import numpy as np
 

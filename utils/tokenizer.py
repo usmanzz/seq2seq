@@ -2,10 +2,6 @@
 from keras_preprocessing.sequence import pad_sequences
 from abc import ABCMeta, abstractmethod
 
-import spacy, os
-
-os.system('python -c "import thinc.neural.gpu_ops"')
-
 
 class SeqTokenizer(metaclass=ABCMeta):
 
@@ -53,11 +49,14 @@ class SeqTokenizer(metaclass=ABCMeta):
         return nums if self.is_encoder else self.add_boarder_token(nums)
 
     def nums2seq(self, nums):
-        return [self.reverse_index[num] for num in nums if num != 0]
+        return [self.reverse_index[num] for num in nums if num not in [0, self.start_tkn, self.end_tkn]]
 
     """implement this if you want different view"""
-    def view_data(self, nums):
-        print(" ".join(self.nums2seq(nums)))
+    def view_data(self, data):
+        for target, decoded in list(zip(data)):
+            print('-')
+            print('Target sentence:', " ".join(self.nums2seq(target)))
+            print('Decoded sentence:', " ".join(self.nums2seq(decoded)))
 
     def get_batch(self, indices):
         self.seqs[indices]
@@ -65,22 +64,3 @@ class SeqTokenizer(metaclass=ABCMeta):
     def add_boarder_token(self, seq):
         return [self.start_tkn] + seq + [self.end_tkn]
 
-
-class EngTokenizer(SeqTokenizer):
-
-    def __init__(self, examples, is_encoder=False):
-        self.eng = spacy.load('en')
-        super().__init__(examples, is_encoder)
-
-    def tokenize_seq(self, seq):
-        return [str(word) for word in self.eng(seq)]
-
-
-class FraTokenizer(SeqTokenizer):
-
-    def __init__(self, examples, is_encoder=False):
-        self.fra = spacy.load('fr')
-        super().__init__(examples, is_encoder)
-
-    def tokenize_seq(self, seq):
-        return [str(word) for word in self.fra(seq)]
