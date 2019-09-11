@@ -107,8 +107,8 @@ class Seq2seqAttention(EncoderDecoder):
         super().__init__(latent_dim, data, embedding_dim)
         encoder_inputs = Input(shape=(self.data.max_encoder_seq_length,))
         decoder_inputs = Input(shape=(None,))
-        encoder_outputs, e_state_h, e_state_c = self.encoder(encoder_inputs)
-        decoded_output, state_h, state_c = self.decoder([decoder_inputs, encoder_outputs, e_state_h, e_state_c])
+        encoder_outputs = self.encoder(encoder_inputs)
+        decoded_output, state_h, state_c = self.decoder([decoder_inputs] + encoder_outputs)
         self.combined = Model([encoder_inputs, decoder_inputs], decoded_output)
         self.combined.compile(optimizer='rmsprop', loss='sparse_categorical_crossentropy')
 
@@ -160,7 +160,7 @@ class BiSeq2seqAttention(EncoderDecoder):
         encoder_inputs = Input(shape=(self.data.max_encoder_seq_length,))
         decoder_inputs = Input(shape=(None,))
         encoder_outputs = self.encoder(encoder_inputs)
-        decoded_output = self.decoder([decoder_inputs]+encoder_outputs)
+        decoded_output = self.decoder([decoder_inputs] + encoder_outputs)
         self.combined = Model([encoder_inputs, decoder_inputs], decoded_output[0])
         self.combined.compile(optimizer='rmsprop', loss='sparse_categorical_crossentropy')
         # self.auto_encoder.summary()
@@ -195,7 +195,7 @@ class BiSeq2seqAttention(EncoderDecoder):
         decoder_dense = Dense(self.data.num_decoder_tokens, activation='softmax')
         decoded_output = TimeDistributed(decoder_dense)(context_vectors)
         decoder_model = Model([decoder_inputs, encoder_outputs, dsh, dsc, dsh1, dsc1],
-                              [decoded_output]+outputs[1:])
+                              [decoded_output] + outputs[1:])
         decoder_model.summary()
         return decoder_model
 
@@ -207,7 +207,7 @@ class BiSeq2seqAttention(EncoderDecoder):
         stop_condition = False
         decoded_sentence = []
         while not stop_condition:
-            output_tokens, dsh, dsc = self.decoder.predict([target_seq]+e_out)
+            output_tokens, dsh, dsc = self.decoder.predict([target_seq] + e_out)
             # Sample a token
             sampled_token_index = np.argmax(output_tokens[0, -1, :])
             decoded_sentence.append(sampled_token_index)
