@@ -17,16 +17,16 @@ class ImgTokenizer(SeqTokenizer):
     def view_data(self, data):
         n = len(data[0])
         plt.figure(figsize=(n * 2, 4))
-        for ind, item in enumerate(list(zip(data))):
+        for ind, item in enumerate(list(zip(*data))):
             ax = plt.subplot(2, n, ind+1)
-            plt.imshow(item[0].reshape(60, 60))
+            plt.imshow(item[0].reshape(self.img_shape))
             plt.gray()
             ax.get_xaxis().set_visible(False)
             ax.get_yaxis().set_visible(False)
 
             # display reconstruction
             ax = plt.subplot(2, n, ind + 1 + n)
-            plt.imshow(item[1].reshape(60, 60))
+            plt.imshow(item[1].reshape(self.img_shape))
             plt.gray()
             ax.get_xaxis().set_visible(False)
             ax.get_yaxis().set_visible(False)
