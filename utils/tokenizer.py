@@ -43,22 +43,27 @@ class SeqTokenizer(metaclass=ABCMeta):
 
     def add_seq(self, seq_tokens):
         self._tokens.extend(seq_tokens)
-        seq_length = len(seq_tokens) + 2
+        seq_length = len(seq_tokens) + 2 if self.is_encoder else 0
         if seq_length > self.max_seq_len:
             self.max_seq_len = seq_length
-        return seq_tokens if self.is_encoder else self.add_boarder_token(seq_tokens)
+        return seq_tokens
 
     def seq2nums(self, sequence):
-        return [self.vocab[word] for word in sequence]
+        nums = [self.vocab[word] for word in sequence]
+        return nums if self.is_encoder else self.add_boarder_token(nums)
 
     def nums2seq(self, nums):
-        return " ".join([self.reverse_index[num] for num in nums if num != 0])
+        return [self.reverse_index[num] for num in nums if num != 0]
+
+    """implement this if you want different view"""
+    def view_data(self, nums):
+        print(" ".join(self.nums2seq(nums)))
 
     def get_batch(self, indices):
         self.seqs[indices]
 
     def add_boarder_token(self, seq):
-        return [self.start] + seq + [self.end]
+        return [self.start_tkn] + seq + [self.end_tkn]
 
 
 class EngTokenizer(SeqTokenizer):
