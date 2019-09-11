@@ -1,7 +1,7 @@
 from ..utils.tokenizer import SeqTokenizer
 from ..utils.data import DatasetHandler
 import spacy, os
-from model.seq2seq import Seq2seq
+from ..model.seq2seq import Seq2seq
 
 os.system('python -c "import thinc.neural.gpu_ops"')
 
