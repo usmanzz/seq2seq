@@ -1,5 +1,5 @@
 from __future__ import print_function
-from tensorflow.keras.layers import Input, Dense, CuDNNLSTM, TimeDistributed, Concatenate, LSTM, Embedding
+from tensorflow.keras.layers import Input, Dense, TimeDistributed, Concatenate, LSTM, Embedding
 from tensorflow.keras.layers import Bidirectional
 from tensorflow.keras.models import Model
 import numpy as np
@@ -32,7 +32,7 @@ class EncoderDecoder(metaclass=ABCMeta):
         self.combined.save(name + '.h5')
 
     def load(self, name="s2s"):
-        self.combined.load(name + '.h5')
+        self.combined.load_weights(name + '.h5')
 
     def get_encoder(self):
         # Define an input sequence and process it.
@@ -147,8 +147,8 @@ class BiSeq2seqAttention(EncoderDecoder):
         super().__init__(latent_dim, data, embedding_dim)
         encoder_inputs = Input(shape=(self.data.max_encoder_seq_length,))
         decoder_inputs = Input(shape=(None,))
-        e_out, esh, esc, esh1, esc1 = self.encoder(encoder_inputs)
-        decoded_output, _, _, _, _ = self.decoder([decoder_inputs, e_out, esh, esc, esh1, esc1])
+        encoder_outputs = self.encoder(encoder_inputs)
+        decoded_output, _, _, _, _ = self.decoder([decoder_inputs] + encoder_outputs)
         self.combined = Model([encoder_inputs, decoder_inputs], decoded_output)
         self.combined.compile(optimizer='rmsprop', loss='sparse_categorical_crossentropy')
         # self.auto_encoder.summary()

@@ -35,7 +35,7 @@ class ImgTokenizer(SeqTokenizer):
 
 class Cap2Img(DatasetHandler):
 
-    def __init__(self, english_sentences, img_sequences):
+    def __init__(self, english_sentences, img_sequences, img_shape):
         encoder_tokenizer = EngTokenizer(english_sentences, is_encoder=True)
-        decoder_tokenizer = ImgTokenizer(img_sequences)
+        decoder_tokenizer = ImgTokenizer(img_shape, img_sequences)
         super().__init__(encoder_tokenizer, decoder_tokenizer)
