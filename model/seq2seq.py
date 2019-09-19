@@ -1,6 +1,6 @@
 from __future__ import print_function
 from tensorflow.keras.layers import Input, Dense, TimeDistributed, Concatenate, LSTM, Embedding
-from tensorflow.keras.layers import Bidirectional
+from tensorflow.keras.layers import Bidirectional, CuDNNLSTM
 from tensorflow.keras.models import Model
 import numpy as np
 from abc import ABCMeta, abstractmethod
@@ -12,6 +12,8 @@ class EncoderDecoder(metaclass=ABCMeta):
         self.latent_dim = latent_dim
         self.embedding_dim = embedding_dim
         self.data = data
+        self.encoder_layer = CuDNNLSTM(self.latent_dim, return_state=True, return_sequences=True)
+        self.decoder_layer = CuDNNLSTM(self.latent_dim, return_sequences=True, return_state=True)
         self.encoder = self.get_encoder()
         self.decoder = self.get_decoder()
         self.combined = None
@@ -38,9 +40,7 @@ class EncoderDecoder(metaclass=ABCMeta):
         # Define an input sequence and process it.
         encoder_inputs = Input(shape=(self.data.max_encoder_seq_length,))
         embeddings = Embedding(self.data.num_encoder_tokens, self.embedding_dim)(encoder_inputs)
-        # encoder = CuDNNLSTM(self.latent_dim, return_state=True, return_sequences=True)
-        encoder = LSTM(self.latent_dim, return_state=True, return_sequences=True)
-        encoder_outputs = encoder(embeddings)
+        encoder_outputs = self.encoder_layer(embeddings)
         encoder_model = Model(encoder_inputs, encoder_outputs)
         encoder_model.summary()
         return encoder_model
@@ -55,14 +55,14 @@ class EncoderDecoder(metaclass=ABCMeta):
 
 
 class Seq2seq(EncoderDecoder):
-    def __init__(self, latent_dim, data, embedding_dim=100):
+    def __init__(self, latent_dim, data, embedding_dim=100, optimizer='adam'):
         super().__init__(latent_dim, data, embedding_dim)
         encoder_inputs = Input(shape=(self.data.max_encoder_seq_length,))
         decoder_inputs = Input(shape=(None,))
         _, e_state_h, e_state_c = self.encoder(encoder_inputs)
         decoded_output, state_h, state_c = self.decoder([decoder_inputs, e_state_h, e_state_c])
         self.combined = Model([encoder_inputs, decoder_inputs], decoded_output)
-        self.combined.compile(optimizer='rmsprop', loss='sparse_categorical_crossentropy')
+        self.combined.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy')
         # self.auto_encoder.summary()
 
     def get_decoder(self):
@@ -70,9 +70,7 @@ class Seq2seq(EncoderDecoder):
         decoder_state_input_h = Input(shape=(self.latent_dim,))
         decoder_state_input_c = Input(shape=(self.latent_dim,))
         embeddings = Embedding(self.data.num_decoder_tokens, self.embedding_dim)(decoder_inputs)
-        # decoder_lstm = CuDNNLSTM(self.latent_dim, return_sequences=True, return_state=True)
-        decoder_lstm = LSTM(self.latent_dim, return_sequences=True, return_state=True)
-        decoder_outputs, state_h, state_c = decoder_lstm(embeddings,
+        decoder_outputs, state_h, state_c = self.decoder_layer(embeddings,
                                                          initial_state=[decoder_state_input_h, decoder_state_input_c])
         decoder_dense = Dense(self.data.num_decoder_tokens, activation='softmax')
         decoded_output = TimeDistributed(decoder_dense)(decoder_outputs)
@@ -97,14 +95,14 @@ class Seq2seq(EncoderDecoder):
 
 class Seq2seqAttention(EncoderDecoder):
 
-    def __init__(self, latent_dim, data, embedding_dim=100):
+    def __init__(self, latent_dim, data, embedding_dim=100, optimizer='adam'):
         super().__init__(latent_dim, data, embedding_dim)
         encoder_inputs = Input(shape=(self.data.max_encoder_seq_length,))
         decoder_inputs = Input(shape=(None,))
         encoder_outputs = self.encoder(encoder_inputs)
         decoded_output, state_h, state_c = self.decoder([decoder_inputs] + encoder_outputs)
         self.combined = Model([encoder_inputs, decoder_inputs], decoded_output)
-        self.combined.compile(optimizer='rmsprop', loss='sparse_categorical_crossentropy')
+        self.combined.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy')
 
     def get_decoder(self):
         decoder_inputs = Input(shape=(None,))
@@ -112,9 +110,7 @@ class Seq2seqAttention(EncoderDecoder):
         decoder_state_input_c = Input(shape=(self.latent_dim,))
         encoder_outputs = Input(shape=(self.data.max_encoder_seq_length, self.latent_dim))
         embeddings = Embedding(self.data.num_decoder_tokens, self.embedding_dim)(decoder_inputs)
-        # decoder_lstm = CuDNNLSTM(self.latent_dim, return_sequences=True, return_state=True)
-        decoder_lstm = LSTM(self.latent_dim, return_sequences=True, return_state=True)
-        decoder_outputs, state_h, state_c = decoder_lstm(embeddings,
+        decoder_outputs, state_h, state_c = self.decoder_layer(embeddings,
                                                          initial_state=[decoder_state_input_h, decoder_state_input_c])
         attn_layer = AttentionLayer(name='attention_layer')
         # print(encoder_outputs.shape, decoder_outputs.shape)
@@ -143,23 +139,21 @@ class Seq2seqAttention(EncoderDecoder):
 
 class BiSeq2seqAttention(EncoderDecoder):
 
-    def __init__(self, latent_dim, data, embedding_dim=100):
+    def __init__(self, latent_dim, data, embedding_dim=100, optimizer='adam'):
         super().__init__(latent_dim, data, embedding_dim)
         encoder_inputs = Input(shape=(self.data.max_encoder_seq_length,))
         decoder_inputs = Input(shape=(None,))
         encoder_outputs = self.encoder(encoder_inputs)
         decoded_output, _, _, _, _ = self.decoder([decoder_inputs] + encoder_outputs)
         self.combined = Model([encoder_inputs, decoder_inputs], decoded_output)
-        self.combined.compile(optimizer='rmsprop', loss='sparse_categorical_crossentropy')
+        self.combined.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy')
         # self.auto_encoder.summary()
 
     def get_encoder(self):
         # Define an input sequence and process it.
         encoder_inputs = Input(shape=(self.data.max_encoder_seq_length,))
         embeddings = Embedding(self.data.num_encoder_tokens, self.embedding_dim)(encoder_inputs)
-        # encoder = CuDNNLSTM(self.latent_dim, return_state=True, return_sequences=True)
-        encoder = LSTM(self.latent_dim, return_state=True, return_sequences=True)
-        encoder_outputs = Bidirectional(encoder, merge_mode="mul")(embeddings)
+        encoder_outputs = Bidirectional(self.encoder_layer, merge_mode="mul")(embeddings)
         encoder_model = Model(encoder_inputs, encoder_outputs)
         encoder_model.summary()
         return encoder_model
@@ -172,9 +166,7 @@ class BiSeq2seqAttention(EncoderDecoder):
         dsh1 = Input(shape=(self.latent_dim,))
         dsc1 = Input(shape=(self.latent_dim,))
         embeddings = Embedding(self.data.num_decoder_tokens, self.embedding_dim)(decoder_inputs)
-        # decoder_lstm = CuDNNLSTM(self.latent_dim, return_sequences=True, return_state=True)
-        decoder_lstm = LSTM(self.latent_dim, return_sequences=True, return_state=True)
-        outputs = Bidirectional(decoder_lstm, merge_mode="mul")(embeddings, initial_state=[dsh, dsc, dsh1, dsc1])
+        outputs = Bidirectional(self.decoder_layer, merge_mode="mul")(embeddings, initial_state=[dsh, dsc, dsh1, dsc1])
         decoder_outputs = outputs[0]
         attn_layer = AttentionLayer(name='attention_layer')
         # print(encoder_outputs.shape, decoder_outputs.shape)

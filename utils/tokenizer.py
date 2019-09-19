@@ -1,11 +1,12 @@
 # import numpy as np
+import pickle
 from keras_preprocessing.sequence import pad_sequences
 from abc import ABCMeta, abstractmethod
 
 
 class SeqTokenizer(metaclass=ABCMeta):
 
-    def __init__(self, examples, is_encoder):
+    def __init__(self, examples, is_encoder, is_cache=True):
         self.examples = examples
         self.is_encoder = is_encoder
         self.start = "<s>"
@@ -18,7 +19,12 @@ class SeqTokenizer(metaclass=ABCMeta):
         self.seqs = []
         self.max_seq_len = 0
         self.num_tokens = 0
-        self.process_data()
+        try:
+            assert is_cache
+            self.load()
+        except AssertionError or FileNotFoundError:
+            self.process_data()
+            self.save()
 
     """
         Tokenize each instance
@@ -59,6 +65,12 @@ class SeqTokenizer(metaclass=ABCMeta):
 
     def get_batch(self, indices):
         self.seqs[indices]
+
+    def save(self, name="data"):
+        pickle.dump(self, open(name+".pkl", "wb"))
+
+    def load(self, name="data"):
+        self.__dict__.update(pickle.load(open(name+".pkl", "rb")).__dict__)
 
     def add_boarder_token(self, seq):
         seq.insert(0, self.start_tkn)
