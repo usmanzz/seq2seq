@@ -12,8 +12,8 @@ class EncoderDecoder(metaclass=ABCMeta):
         self.latent_dim = latent_dim
         self.embedding_dim = embedding_dim
         self.data = data
-        self.encoder_layer = CuDNNLSTM(self.latent_dim, return_state=True, return_sequences=True)
-        self.decoder_layer = CuDNNLSTM(self.latent_dim, return_sequences=True, return_state=True)
+        self.encoder_layer = LSTM(self.latent_dim, return_state=True, return_sequences=True)
+        self.decoder_layer = LSTM(self.latent_dim, return_sequences=True, return_state=True)
         self.encoder = self.get_encoder()
         self.decoder = self.get_decoder()
         self.combined = None
