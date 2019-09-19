@@ -22,7 +22,7 @@ class SeqTokenizer(metaclass=ABCMeta):
         try:
             assert is_cache
             self.load()
-        except AssertionError or FileNotFoundError:
+        except:
             self.process_data()
             self.save()
 
