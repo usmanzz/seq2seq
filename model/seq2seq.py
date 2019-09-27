@@ -1,5 +1,5 @@
 from __future__ import print_function
-from tensorflow.keras.layers import Input, Dense, TimeDistributed, Concatenate, LSTM, Embedding
+from tensorflow.keras.layers import Input, Dense, TimeDistributed, Concatenate, LSTM, Embedding, Multiply
 from tensorflow.keras.layers import Bidirectional, CuDNNLSTM
 from tensorflow.keras.models import Model
 import numpy as np
@@ -148,7 +148,7 @@ class BiSeq2seqAttention(Seq2seqAttention):
         encoder_inputs = Input(shape=(self.data.max_encoder_seq_length,))
         embeddings = Embedding(self.data.num_encoder_tokens, self.embedding_dim)(encoder_inputs)
         encoder_outputs, esh, esc, esh1, esc1 = Bidirectional(self.encoder_layer, merge_mode="mul")(embeddings)
-        encoder_model = Model(encoder_inputs, [encoder_outputs, K.dot(esh, esh1), K.dot(esc, esc1)])
+        encoder_model = Model(encoder_inputs, [encoder_outputs, Multiply()([esh, esh1]), Multiply()([esc, esc1])])  
         encoder_model.summary()
         return encoder_model
 
