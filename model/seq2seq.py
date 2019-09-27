@@ -143,7 +143,19 @@ class Seq2seqAttention(EncoderDecoder):
 class BiSeq2seqAttention(Seq2seqAttention):
 
     def __init__(self, latent_dim, data, embedding_dim=100, optimizer='adam'):
-        super().__init__(latent_dim, data, embedding_dim, optimizer=optimizer)
+        self.latent_dim = latent_dim
+        self.embedding_dim = embedding_dim
+        self.data = data
+        self.encoder_layer = LSTM(self.latent_dim, return_state=True, return_sequences=True)
+        self.decoder_layer = LSTM(self.latent_dim*2, return_sequences=True, return_state=True)
+        self.encoder = self.get_encoder()
+        self.decoder = self.get_decoder()
+        encoder_inputs = Input(shape=(self.data.max_encoder_seq_length,))
+        decoder_inputs = Input(shape=(None,))
+        encoder_outputs = self.encoder(encoder_inputs)
+        decoded_output, state_h, state_c = self.decoder([decoder_inputs] + encoder_outputs)
+        self.combined = Model([encoder_inputs, decoder_inputs], decoded_output)
+        self.combined.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy')
 
     def get_encoder(self):
         # Define an input sequence and process it.
