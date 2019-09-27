@@ -147,8 +147,8 @@ class BiSeq2seqAttention(Seq2seqAttention):
         # Define an input sequence and process it.
         encoder_inputs = Input(shape=(self.data.max_encoder_seq_length,))
         embeddings = Embedding(self.data.num_encoder_tokens, self.embedding_dim)(encoder_inputs)
-        encoder_outputs, esh, esc, esh1, esc1 = Bidirectional(self.encoder_layer, merge_mode="mul")(embeddings)
-        encoder_model = Model(encoder_inputs, [encoder_outputs, Multiply()([esh, esh1]), Multiply()([esc, esc1])])  
+        encoder_outputs, esh, esh1, esc, esc1 = Bidirectional(self.encoder_layer, merge_mode="mul")(embeddings)
+        encoder_model = Model(encoder_inputs, [encoder_outputs, Multiply()([esh, esh1]), Multiply()([esc, esc1])])
         encoder_model.summary()
         return encoder_model
 
