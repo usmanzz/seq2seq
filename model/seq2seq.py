@@ -4,6 +4,7 @@ from tensorflow.keras.layers import Bidirectional, CuDNNLSTM
 from tensorflow.keras.models import Model
 import numpy as np
 from abc import ABCMeta, abstractmethod
+import tensorflow.keras.backend as K
 from ..layers.attention import AttentionLayer
 
 
@@ -137,57 +138,17 @@ class Seq2seqAttention(EncoderDecoder):
         return decoded
 
 
-class BiSeq2seqAttention(EncoderDecoder):
+class BiSeq2seqAttention(Seq2seqAttention):
 
     def __init__(self, latent_dim, data, embedding_dim=100, optimizer='adam'):
-        super().__init__(latent_dim, data, embedding_dim)
-        encoder_inputs = Input(shape=(self.data.max_encoder_seq_length,))
-        decoder_inputs = Input(shape=(None,))
-        encoder_outputs = self.encoder(encoder_inputs)
-        decoded_output, _, _, _, _ = self.decoder([decoder_inputs] + encoder_outputs)
-        self.combined = Model([encoder_inputs, decoder_inputs], decoded_output)
-        self.combined.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy')
-        # self.auto_encoder.summary()
+        super().__init__(latent_dim, data, embedding_dim,optimizer=optimizer)
 
     def get_encoder(self):
         # Define an input sequence and process it.
         encoder_inputs = Input(shape=(self.data.max_encoder_seq_length,))
         embeddings = Embedding(self.data.num_encoder_tokens, self.embedding_dim)(encoder_inputs)
-        encoder_outputs = Bidirectional(self.encoder_layer, merge_mode="mul")(embeddings)
-        encoder_model = Model(encoder_inputs, encoder_outputs)
+        encoder_outputs, esh, esc, esh1, esc1 = Bidirectional(self.encoder_layer, merge_mode="mul")(embeddings)
+        encoder_model = Model(encoder_inputs, [encoder_outputs, K.dot(esh, esh1), K.dot(esc, esc1)])
         encoder_model.summary()
         return encoder_model
 
-    def get_decoder(self):
-        decoder_inputs = Input(shape=(None,))
-        encoder_outputs = Input(shape=(self.data.max_encoder_seq_length, self.latent_dim))
-        dsh = Input(shape=(self.latent_dim,))
-        dsc = Input(shape=(self.latent_dim,))
-        dsh1 = Input(shape=(self.latent_dim,))
-        dsc1 = Input(shape=(self.latent_dim,))
-        embeddings = Embedding(self.data.num_decoder_tokens, self.embedding_dim)(decoder_inputs)
-        outputs = Bidirectional(self.decoder_layer, merge_mode="mul")(embeddings, initial_state=[dsh, dsc, dsh1, dsc1])
-        decoder_outputs = outputs[0]
-        attn_layer = AttentionLayer(name='attention_layer')
-        # print(encoder_outputs.shape, decoder_outputs.shape)
-        attn_out, attn_states = attn_layer([encoder_outputs, decoder_outputs])
-        context_vectors = Concatenate()([attn_out, decoder_outputs])
-        decoder_dense = Dense(self.data.num_decoder_tokens, activation='softmax')
-        decoded_output = TimeDistributed(decoder_dense)(context_vectors)
-        decoder_model = Model([decoder_inputs, encoder_outputs, dsh, dsc, dsh1, dsc1],
-                              [decoded_output] + outputs[1:])
-        decoder_model.summary()
-        return decoder_model
-
-    def decode_seq(self, input_seq):
-        e_out, dsh, dsc, dsh1, dsc1 = self.encoder.predict(input_seq)
-        target_seq = np.ones((input_seq.shape[0], 1))
-        target_seq = target_seq * [self.data.decoder_tokenizer.start_tkn]
-        # Sampling loop for a batch of sequences
-        decoded = None
-        for _ in range(self.data.max_decoder_seq_length):
-            output_tokens, dsh, dsc, dsh1, dsc1 = self.decoder.predict([target_seq, e_out, dsh, dsc, dsh1, dsc1])
-            sampled = np.argmax(output_tokens, axis=2)
-            decoded = sampled if decoded is None else np.hstack((decoded, sampled))
-            target_seq = sampled
-        return decoded
