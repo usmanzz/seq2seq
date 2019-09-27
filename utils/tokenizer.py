@@ -19,12 +19,13 @@ class SeqTokenizer(metaclass=ABCMeta):
         self.seqs = []
         self.max_seq_len = 0
         self.num_tokens = 0
-        try:
-            assert is_cache
-            self.load()
-        except:
-            self.process_data()
-            self.save()
+        # try:
+        #     assert is_cache
+        #     self.load()
+        # except:
+        #     self.process_data()
+        #     self.save()
+        self.process_data()
 
     """
         Tokenize each instance
