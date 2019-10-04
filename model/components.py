@@ -1,5 +1,5 @@
 from __future__ import print_function
-from tensorflow.keras.layers import Input, Dense, TimeDistributed, Concatenate, LSTM, Embedding
+from tensorflow.keras.layers import Input, Dense, TimeDistributed, Concatenate, LSTM, Embedding, GRU
 from tensorflow.keras.layers import Bidirectional
 from tensorflow.keras.models import Model
 # import numpy as np
@@ -13,9 +13,9 @@ import tensorflow as tf
 class BahdanauAttention(Model):
     def __init__(self, units):
         super(BahdanauAttention, self).__init__()
-        self.W1 = tf.keras.layers.Dense(units)
-        self.W2 = tf.keras.layers.Dense(units)
-        self.V = tf.keras.layers.Dense(1)
+        self.W1 = Dense(units)
+        self.W2 = Dense(units)
+        self.V = Dense(1)
 
     def call(self, query, values):
         # hidden shape == (batch_size, hidden size)
@@ -44,8 +44,8 @@ class Encoder(Model):
         super(Encoder, self).__init__()
         # self.batch_sz = batch_sz
         self.enc_units = enc_units
-        self.embedding = tf.keras.layers.Embedding(vocab_size, embedding_dim)
-        self.gru = tf.keras.layers.GRU(self.enc_units,
+        self.embedding = Embedding(vocab_size, embedding_dim)
+        self.gru = GRU(self.enc_units,
                                        return_sequences=True,
                                        return_state=True,
                                        recurrent_initializer='glorot_uniform')
@@ -78,12 +78,12 @@ class Decoder(Model):
         super(Decoder, self).__init__()
         # self.batch_sz = batch_sz
         self.dec_units = dec_units
-        self.embedding = tf.keras.layers.Embedding(vocab_size, embedding_dim)
-        self.gru = tf.keras.layers.GRU(self.dec_units,
+        self.embedding = Embedding(vocab_size, embedding_dim)
+        self.gru = GRU(self.dec_units,
                                        return_sequences=True,
                                        return_state=True,
                                        recurrent_initializer='glorot_uniform')
-        self.fc = tf.keras.layers.Dense(vocab_size)
+        self.fc = Dense(vocab_size)
 
         # used for attention
         self.attention = BahdanauAttention(self.dec_units)
