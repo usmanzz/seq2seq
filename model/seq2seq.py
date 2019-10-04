@@ -14,8 +14,8 @@ class Seq2seqAttention:
         self.decoder = self.get_decoder()
         encoder_inputs = Input(shape=(self.data.max_encoder_seq_length,))
         decoder_inputs = Input(shape=(None,))
-        outputs = self.encoder(encoder_inputs)
-        decoded_output, states = self.decoder(*tuple(decoder_inputs) + outputs)
+        output, hidden = self.encoder(encoder_inputs)
+        decoded_output, states = self.decoder(decoder_inputs, output, hidden)
         self.combined = Model([encoder_inputs, decoder_inputs], decoded_output)
         self.combined.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy')
 
