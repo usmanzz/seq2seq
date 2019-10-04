@@ -3,40 +3,9 @@ from tensorflow.keras.layers import Input, Dense, TimeDistributed, Concatenate, 
 from tensorflow.keras.layers import Bidirectional, CuDNNLSTM
 from tensorflow.keras.models import Model
 import numpy as np
-import tensorflow as tf
 from abc import ABCMeta, abstractmethod
 import tensorflow.keras.backend as K
-
-
-# from ..layers.attention import AttentionLayer
-
-class BahdanauAttention(tf.keras.Model):
-    def __init__(self, units):
-        super(BahdanauAttention, self).__init__()
-        self.W1 = tf.keras.layers.Dense(units)
-        self.W2 = tf.keras.layers.Dense(units)
-        self.V = tf.keras.layers.Dense(1)
-
-    def call(self, query, values):
-        # hidden shape == (batch_size, hidden size)
-        # hidden_with_time_axis shape == (batch_size, 1, hidden size)
-        # we are doing this to perform addition to calculate the score
-        hidden_with_time_axis = tf.expand_dims(query, 1)
-
-        # score shape == (batch_size, max_length, 1)
-        # we get 1 at the last axis because we are applying score to self.V
-        # the shape of the tensor before applying self.V is (batch_size, max_length, units)
-        score = self.V(tf.nn.tanh(
-            self.W1(values) + self.W2(hidden_with_time_axis)))
-
-        # attention_weights shape == (batch_size, max_length, 1)
-        attention_weights = tf.nn.softmax(score, axis=1)
-
-        # context_vector shape after sum == (batch_size, hidden_size)
-        context_vector = attention_weights * values
-        context_vector = tf.reduce_sum(context_vector, axis=1)
-
-        return context_vector, attention_weights
+from ..layers.attention import AttentionLayer
 
 
 class EncoderDecoder(metaclass=ABCMeta):
@@ -129,7 +98,6 @@ class Seq2seq(EncoderDecoder):
 class Seq2seqAttention(EncoderDecoder):
 
     def __init__(self, latent_dim, data, embedding_dim=100, optimizer='adam'):
-        self.attention = BahdanauAttention(latent_dim)
         super().__init__(latent_dim, data, embedding_dim)
         encoder_inputs = Input(shape=(self.data.max_encoder_seq_length,))
         decoder_inputs = Input(shape=(None,))
@@ -147,10 +115,10 @@ class Seq2seqAttention(EncoderDecoder):
         decoder_outputs, state_h, state_c = self.decoder_layer(embeddings,
                                                                initial_state=[decoder_state_input_h,
                                                                               decoder_state_input_c])
-        # attn_layer = AttentionLayer(name='attention_layer')
+        attn_layer = AttentionLayer(name='attention_layer')
         # print(encoder_outputs.shape, decoder_outputs.shape)
-        context, attn_states = self.attention(decoder_outputs, encoder_outputs)
-        context_vectors = Concatenate()([context, decoder_outputs])
+        attn_out, attn_states = attn_layer([encoder_outputs, decoder_outputs])
+        context_vectors = Concatenate()([attn_out, decoder_outputs])
         decoder_dense = Dense(self.data.num_decoder_tokens, activation='softmax')
         decoded_output = TimeDistributed(decoder_dense)(context_vectors)
         decoder_model = Model([decoder_inputs, encoder_outputs, decoder_state_input_h, decoder_state_input_c],
@@ -164,7 +132,7 @@ class Seq2seqAttention(EncoderDecoder):
         target_seq = target_seq * [self.data.decoder_tokenizer.start_tkn]
         # Sampling loop for a batch of sequences
         decoded = None
-        for _ in range(self.data.max_decoder_seq_length + 1):
+        for _ in range(self.data.max_decoder_seq_length+1):
             output_tokens, dsh, dsc = self.decoder.predict([target_seq, e_out, dsh, dsc])
             sampled = np.argmax(output_tokens, axis=2)
             decoded = sampled if decoded is None else np.hstack((decoded, sampled))
@@ -179,7 +147,7 @@ class BiSeq2seqAttention(Seq2seqAttention):
         self.embedding_dim = embedding_dim
         self.data = data
         self.encoder_layer = LSTM(self.latent_dim, return_state=True, return_sequences=True)
-        self.decoder_layer = LSTM(self.latent_dim * 2, return_sequences=True, return_state=True)
+        self.decoder_layer = LSTM(self.latent_dim*2, return_sequences=True, return_state=True)
         self.encoder = self.get_encoder()
         self.decoder = self.get_decoder()
         encoder_inputs = Input(shape=(self.data.max_encoder_seq_length,))
