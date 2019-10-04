@@ -26,8 +26,7 @@ class BahdanauAttention(Model):
         # score shape == (batch_size, max_length, 1)
         # we get 1 at the last axis because we are applying score to self.V
         # the shape of the tensor before applying self.V is (batch_size, max_length, units)
-        score = self.V(tf.nn.tanh(
-            self.W1(values) + self.W2(hidden_with_time_axis)))
+        score = self.V(tf.nn.tanh(self.W1(values) + self.W2(hidden_with_time_axis)))
 
         # attention_weights shape == (batch_size, max_length, 1)
         attention_weights = tf.nn.softmax(score, axis=1)
@@ -100,11 +99,11 @@ class Decoder(Model):
         output, state = self.gru(x, initial_state=states)
 
         context_vector, attention_weights = self.attention(output, enc_output)
-
+        context_vectors = Concatenate()([context_vector, output])
         # output shape == (batch_size * 1, hidden_size)
         # output = tf.reshape(output, (-1, output.shape[2]))
 
         # output shape == (batch_size, vocab)
-        out = self.fc(context_vector)
+        out = self.fc(context_vectors)
 
         return out, state
