@@ -88,7 +88,7 @@ class Decoder(Model):
         # used for attention
         self.attention = BahdanauAttention(self.dec_units)
 
-    def call(self, x, enc_output):
+    def call(self, x, enc_output, states):
         # enc_output shape == (batch_size, max_length, hidden_size)
         # x shape after passing through embedding == (batch_size, 1, embedding_dim)
         x = self.embedding(x)
@@ -97,7 +97,7 @@ class Decoder(Model):
         # x = tf.concat([tf.expand_dims(context_vector, 1), x], axis=-1)
 
         # passing the concatenated vector to the GRU
-        output, state = self.gru(x)
+        output, state = self.gru(x, initial_state=states)
 
         context_vector, attention_weights = self.attention(output, enc_output)
 
