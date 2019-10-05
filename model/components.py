@@ -1,12 +1,12 @@
 from __future__ import print_function
-from tensorflow.keras.layers import Input, Dense, TimeDistributed, Concatenate, LSTM, Embedding, GRU
+from tensorflow.keras.layers import Input, Dense, TimeDistributed, Concatenate, Embedding, GRU
 from tensorflow.keras.layers import Bidirectional
 from tensorflow.keras.models import Model
+
 # import numpy as np
 import tensorflow as tf
 # from abc import ABCMeta, abstractmethod
 # import tensorflow.keras.backend as K
-
 
 # from ..layers.attention import AttentionLayer
 
@@ -87,24 +87,42 @@ class Decoder(Model):
         # used for attention
         self.attention = BahdanauAttention(self.dec_units)
 
-    def call(self, x, enc_output, states):
+    def call(self, x, enc_output, init_state):
         # enc_output shape == (batch_size, max_length, hidden_size)
         # x shape after passing through embedding == (batch_size, 1, embedding_dim)
         x = self.embedding(x)
 
         # x shape after concatenation == (batch_size, 1, embedding_dim + hidden_size)
         # x = tf.concat([tf.expand_dims(context_vector, 1), x], axis=-1)
-        context_vector, attention_weights = self.attention(x, enc_output)
-        context_vectors = Concatenate()([context_vector, x])
+        # context_vector, attention_weights = self.attention(x, enc_output)
+        # context_vectors = Concatenate()([context_vector, x])
         # passing the concatenated vector to the GRU
-        output, state = self.gru(context_vectors, initial_state=states)
+        decoder_outputs, state = self.gru(x, initial_state=init_state)
 
-        # context_vector, attention_weights = self.attention(output, enc_output)
+        context_vector, attention_weights = self.attention(decoder_outputs, enc_output)
 
         # output shape == (batch_size * 1, hidden_size)
         # output = tf.reshape(output, (-1, output.shape[2]))
+        outputs = Concatenate()([context_vector, decoder_outputs])
+        print(context_vector.shape, decoder_outputs.shape, outputs.shape)
 
         # output shape == (batch_size, vocab)
-        out = self.fc(output)
+        out = TimeDistributed(self.fc)(outputs)
 
         return out, state
+
+
+if __name__ == '__main__':
+    encoder = Encoder(1000, 50, 100)
+    decoder = Decoder(3000, 50, 100)
+    encoder_inputs = Input(shape=(13,))
+    decoder_inputs = Input(shape=(15,))
+    output, encoder_states = encoder(encoder_inputs)
+    print(output.shape, encoder_states.shape)
+    decoded_output, states = decoder(decoder_inputs, output, encoder_states)
+    print(decoded_output.shape, states.shape)
+    combined = Model([encoder_inputs, decoder_inputs], decoded_output)
+    combined.compile(optimizer="adam", loss='sparse_categorical_crossentropy')
+    # combined.summary()
+    encoder.summary()
+    decoder.summary()
