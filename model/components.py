@@ -94,16 +94,17 @@ class Decoder(Model):
 
         # x shape after concatenation == (batch_size, 1, embedding_dim + hidden_size)
         # x = tf.concat([tf.expand_dims(context_vector, 1), x], axis=-1)
-
+        context_vector, attention_weights = self.attention(x, enc_output)
+        context_vectors = Concatenate()([context_vector, x])
         # passing the concatenated vector to the GRU
-        output, state = self.gru(x, initial_state=states)
+        output, state = self.gru(context_vectors, initial_state=states)
 
-        context_vector, attention_weights = self.attention(output, enc_output)
-        context_vectors = Concatenate()([context_vector, output])
+        # context_vector, attention_weights = self.attention(output, enc_output)
+
         # output shape == (batch_size * 1, hidden_size)
         # output = tf.reshape(output, (-1, output.shape[2]))
 
         # output shape == (batch_size, vocab)
-        out = self.fc(context_vectors)
+        out = self.fc(output)
 
         return out, state
