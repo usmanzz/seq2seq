@@ -3,7 +3,6 @@ from tensorflow.keras.layers import Input, Dense, TimeDistributed, concatenate, 
 from tensorflow.keras.layers import Bidirectional
 from tensorflow.keras.models import Model
 from ..layers.attention import AttentionLayer
-from tensorflow_core.python.keras.layers.wrappers import Bidirectional
 
 # from layers.attention import AttentionLayer
 # import numpy as np
