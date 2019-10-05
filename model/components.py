@@ -2,10 +2,10 @@ from __future__ import print_function
 from tensorflow.keras.layers import Input, Dense, TimeDistributed, concatenate, Embedding, GRU
 from tensorflow.keras.layers import Bidirectional
 from tensorflow.keras.models import Model
-# from ..layers.attention import AttentionLayer
+from ..layers.attention import AttentionLayer
 from tensorflow_core.python.keras.layers.wrappers import Bidirectional
 
-from layers.attention import AttentionLayer
+# from layers.attention import AttentionLayer
 # import numpy as np
 import tensorflow as tf
 
