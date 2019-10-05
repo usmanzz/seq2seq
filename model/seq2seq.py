@@ -136,8 +136,8 @@ class Seq2seqAttention(EncoderDecoder):
 
 class BiSeq2seqAttention(Seq2seqAttention):
 
-    def __init__(self, enc_units, dec_units, data, embedding_dim=100, optimizer='adam'):
-        super().__init__(enc_units, dec_units*2, data, embedding_dim)
+    def __init__(self, latent_dim, data, embedding_dim=100, optimizer='adam'):
+        super().__init__(latent_dim, latent_dim*2, data, embedding_dim)
 
     def get_encoder(self):
         # Define an input sequence and process it.
