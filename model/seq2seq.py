@@ -67,4 +67,4 @@ class BiSeq2seqAttention(Seq2seqAttention):
         return BidirectionalEncoder(self.data.num_encoder_tokens, self.embedding_dim, self.latent_dim)
 
     def get_decoder(self):
-        return Decoder(self.data.num_encoder_tokens, self.embedding_dim, self.latent_dim * 2)
+        return Decoder(self.data.num_decoder_tokens, self.embedding_dim, self.latent_dim * 2)

@@ -41,7 +41,7 @@ class Decoder(tf.keras.Model):
                                        return_state=True,
                                        recurrent_initializer='glorot_uniform')
         self.attention = tf.keras.layers.Attention()
-        self.fc = tf.keras.layers.Dense(vocab_size)
+        self.fc = tf.keras.layers.TimeDistributed(tf.keras.layers.Dense(vocab_size))
 
     def call(self, inp):
         # enc_output shape == (batch_size, max_length, hidden_size)
@@ -51,7 +51,7 @@ class Decoder(tf.keras.Model):
         decoder_outputs, state = self.gru(x, initial_state=[init_state])
         context_vector = self.attention([decoder_outputs, enc_output])
         outputs = tf.keras.layers.concatenate([context_vector, decoder_outputs])
-        out = tf.keras.layers.TimeDistributed(self.fc)(outputs)
+        out = self.fc(outputs)
         return out, state
 
 if __name__ == '__main__':
