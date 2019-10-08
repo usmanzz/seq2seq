@@ -17,7 +17,7 @@ class Seq2seqAttention:
         decoded_output, states = self.decoder([decoder_inputs, output, hidden])
         self.combined = tf.keras.Model([encoder_inputs, decoder_inputs], decoded_output)
         self.combined.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy')
-        self.inference = self.get_inference_model()
+        self.inference = self.get_inference()
         self.combined.summary()
         # self.decoder.summary()
 
@@ -45,10 +45,10 @@ class Seq2seqAttention:
     def get_decoder(self):
         return Decoder(self.data.num_decoder_tokens, self.embedding_dim, self.latent_dim)
 
-    def get_inference_model(self):
+    def get_inference(self):
         encoder_inputs = tf.keras.layers.Input(shape=(self.data.max_encoder_seq_length,))
         e_out, states = self.encoder(encoder_inputs)
-        target_seq = tf.ones((encoder_inputs.shape[0], 1), dtype=tf.dtypes.int64) * self.data.decoder_tokenizer.start_tkn
+        target_seq = tf.ones((tf.shape(encoder_inputs)[0], 1), dtype=tf.dtypes.int64) * self.data.decoder_tokenizer.start_tkn
         decoded = target_seq
         for _ in range(self.data.max_decoder_seq_length + 1):
             output_tokens, states = self.decoder([target_seq, e_out, states])
