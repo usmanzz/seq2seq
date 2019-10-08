@@ -1,6 +1,5 @@
 from __future__ import print_function
-from tensorflow.keras.layers import Input
-from tensorflow.keras.models import Model
+import tensorflow as tf
 import numpy as np
 from .components import Encoder, Decoder, BidirectionalEncoder
 
@@ -12,11 +11,11 @@ class Seq2seqAttention:
         self.data = data
         self.encoder = self.get_encoder()
         self.decoder = self.get_decoder()
-        encoder_inputs = Input(shape=(self.data.max_encoder_seq_length,))
-        decoder_inputs = Input(shape=(None,))
+        encoder_inputs = tf.keras.layers.Input(shape=(self.data.max_encoder_seq_length,))
+        decoder_inputs = tf.keras.layers.Input(shape=(None,))
         output, hidden = self.encoder(encoder_inputs)
         decoded_output, states = self.decoder([decoder_inputs, output, hidden])
-        self.combined = Model([encoder_inputs, decoder_inputs], decoded_output)
+        self.combined = tf.keras.Model([encoder_inputs, decoder_inputs], decoded_output)
         self.combined.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy')
         self.combined.summary()
         # self.decoder.summary()
@@ -53,7 +52,7 @@ class Seq2seqAttention:
         decoded = None
         for _ in range(self.data.max_decoder_seq_length + 1):
             output_tokens, states = self.decoder.predict([target_seq, e_out, states])
-            sampled = np.argmax(output_tokens, axis=2)
+            sampled = tf.argmax(output_tokens, axis=2).numpy()
             decoded = sampled if decoded is None else np.hstack((decoded, sampled))
             target_seq = sampled
         return decoded
@@ -68,4 +67,4 @@ class BiSeq2seqAttention(Seq2seqAttention):
         return BidirectionalEncoder(self.data.num_encoder_tokens, self.embedding_dim, self.latent_dim)
 
     def get_decoder(self):
-        return Decoder(self.data.num_encoder_tokens, self.embedding_dim, self.latent_dim*2)
+        return Decoder(self.data.num_encoder_tokens, self.embedding_dim, self.latent_dim * 2)
