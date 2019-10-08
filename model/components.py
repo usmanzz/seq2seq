@@ -1,6 +1,8 @@
 from __future__ import print_function
 import tensorflow as tf
-tf.executing_eagerly()
+
+# tf.executing_eagerly()
+
 
 class Encoder(tf.keras.Model):
     def __init__(self, vocab_size, embedding_dim, enc_units):
@@ -10,8 +12,7 @@ class Encoder(tf.keras.Model):
         self.embedding = tf.keras.layers.Embedding(vocab_size, embedding_dim)
         self.gru = tf.keras.layers.GRU(self.enc_units,
                                        return_sequences=True,
-                                       return_state=True,
-                                       recurrent_initializer='glorot_uniform')
+                                       return_state=True)
 
     def call(self, x):
         x = self.embedding(x)
@@ -38,14 +39,11 @@ class Decoder(tf.keras.Model):
         self.embedding = tf.keras.layers.Embedding(vocab_size, embedding_dim)
         self.gru = tf.keras.layers.GRU(self.dec_units,
                                        return_sequences=True,
-                                       return_state=True,
-                                       recurrent_initializer='glorot_uniform')
+                                       return_state=True)
         self.attention = tf.keras.layers.Attention()
         self.fc = tf.keras.layers.TimeDistributed(tf.keras.layers.Dense(vocab_size))
 
     def call(self, inp):
-        # enc_output shape == (batch_size, max_length, hidden_size)
-        # x shape after passing through embedding == (batch_size, 1, embedding_dim)
         x, enc_output, init_state = inp
         x = self.embedding(x)
         decoder_outputs, state = self.gru(x, initial_state=[init_state])
@@ -53,6 +51,7 @@ class Decoder(tf.keras.Model):
         outputs = tf.keras.layers.concatenate([context_vector, decoder_outputs])
         out = self.fc(outputs)
         return out, state
+
 
 if __name__ == '__main__':
     encoder = BidirectionalEncoder(1000, 50, 200)
