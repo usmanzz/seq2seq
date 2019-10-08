@@ -17,6 +17,7 @@ class Seq2seqAttention:
         decoded_output, states = self.decoder([decoder_inputs, output, hidden])
         self.combined = tf.keras.Model([encoder_inputs, decoder_inputs], decoded_output)
         self.combined.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy')
+        self.inference = self.get_inference_model()
         self.combined.summary()
         # self.decoder.summary()
 
@@ -44,17 +45,20 @@ class Seq2seqAttention:
     def get_decoder(self):
         return Decoder(self.data.num_decoder_tokens, self.embedding_dim, self.latent_dim)
 
-    def decode_seq(self, input_seq):
-        e_out, states = self.encoder(input_seq)
-        target_seq = np.ones((input_seq.shape[0], 1))
-        target_seq = target_seq * [self.data.decoder_tokenizer.start_tkn]
-        # Sampling loop for a batch of sequences
-        decoded = None
+    def get_inference_model(self):
+        encoder_inputs = tf.keras.layers.Input(shape=(self.data.max_encoder_seq_length,))
+        e_out, states = self.encoder(encoder_inputs)
+        target_seq = tf.ones((encoder_inputs.shape[0], 1), dtype=np.int) * [self.data.decoder_tokenizer.start_tkn]
+        decoded = target_seq
         for _ in range(self.data.max_decoder_seq_length + 1):
             output_tokens, states = self.decoder([target_seq, e_out, states])
-            sampled = tf.argmax(output_tokens, axis=2).numpy()
-            decoded = sampled if decoded is None else np.hstack((decoded, sampled))
+            sampled = tf.argmax(output_tokens, axis=-1)
+            decoded = tf.keras.layers.concatenate([decoded, sampled])
             target_seq = sampled
+        return tf.keras.Model(encoder_inputs, decoded)
+
+    def decode_seq(self, input_seq):
+        decoded = self.inference.predict(input_seq)
         return decoded
 
 
