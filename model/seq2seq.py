@@ -15,7 +15,7 @@ class Seq2seqAttention:
         encoder_inputs = Input(shape=(self.data.max_encoder_seq_length,))
         decoder_inputs = Input(shape=(None,))
         output, hidden = self.encoder(encoder_inputs)
-        decoded_output, states = self.decoder(decoder_inputs, output, hidden)
+        decoded_output, states = self.decoder([decoder_inputs, output, hidden])
         self.combined = Model([encoder_inputs, decoder_inputs], decoded_output)
         self.combined.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy')
         self.combined.summary()
@@ -52,7 +52,7 @@ class Seq2seqAttention:
         # Sampling loop for a batch of sequences
         decoded = None
         for _ in range(self.data.max_decoder_seq_length + 1):
-            output_tokens, states = self.decoder.predict(target_seq, e_out, states)
+            output_tokens, states = self.decoder.predict([target_seq, e_out, states])
             sampled = np.argmax(output_tokens, axis=2)
             decoded = sampled if decoded is None else np.hstack((decoded, sampled))
             target_seq = sampled

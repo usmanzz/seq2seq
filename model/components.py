@@ -49,16 +49,16 @@ class Decoder(tf.keras.Model):
         self.fc = tf.keras.layers.Dense(vocab_size)
         self.attention = tf.keras.layers.Attention()
 
-    def call(self, x, enc_output, init_state):
+    def call(self, inp):
         # enc_output shape == (batch_size, max_length, hidden_size)
         # x shape after passing through embedding == (batch_size, 1, embedding_dim)
+        x, enc_output, init_state = inp
         x = self.embedding(x)
         decoder_outputs, state = self.gru(x, initial_state=[init_state])
         context_vector = self.attention([decoder_outputs, enc_output])
         outputs = tf.keras.layers.concatenate([context_vector, decoder_outputs])
         out = tf.keras.layers.TimeDistributed(self.fc)(outputs)
         return out, state
-
 
 if __name__ == '__main__':
     encoder = BidirectionalEncoder(1000, 50, 200)
@@ -67,7 +67,7 @@ if __name__ == '__main__':
     decoder_inputs = tf.keras.layers.Input(shape=(None,))
     output, encoder_states = encoder(encoder_inputs)
     print(output.shape, encoder_states.shape)
-    decoded_output, states = decoder(decoder_inputs, output, encoder_states)
+    decoded_output, states = decoder([decoder_inputs, output, encoder_states])
     print(decoded_output.shape, states.shape)
     combined = tf.keras.Model([encoder_inputs, decoder_inputs], decoded_output)
     combined.compile(optimizer="adam", loss='sparse_categorical_crossentropy')
