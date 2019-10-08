@@ -18,6 +18,8 @@ class Seq2seqAttention:
         decoded_output, states = self.decoder(decoder_inputs, output, hidden)
         self.combined = Model([encoder_inputs, decoder_inputs], decoded_output)
         self.combined.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy')
+        self.encoder.summary()
+        self.decoder.summary()
 
     def train(self, num_instances=10000, batch_size=100, epochs=100):
         source, inp_targets, targets = self.data.get_train(num_instances)
