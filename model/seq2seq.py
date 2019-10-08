@@ -3,6 +3,7 @@ from tensorflow.keras.layers import Input, Dense, TimeDistributed, Concatenate, 
 from tensorflow.keras.layers import Bidirectional
 from tensorflow.keras.models import Model
 import numpy as np
+import tensorflow as tf
 from abc import ABCMeta, abstractmethod
 from ..layers.attention import AttentionLayer
 
@@ -54,45 +55,6 @@ class EncoderDecoder(metaclass=ABCMeta):
     def decode_seq(self, input_seq):
         pass
 
-
-class Seq2seq(EncoderDecoder):
-    def __init__(self, enc_units, dec_units, data, embedding_dim=100, optimizer='adam'):
-        super().__init__(enc_units, dec_units, data, embedding_dim)
-        encoder_inputs = Input(shape=(self.data.max_encoder_seq_length,))
-        decoder_inputs = Input(shape=(None,))
-        _, e_state = self.encoder(encoder_inputs)
-        decoded_output, state = self.decoder([decoder_inputs, e_state])
-        self.combined = Model([encoder_inputs, decoder_inputs], decoded_output)
-        self.combined.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy')
-        # self.auto_encoder.summary()
-
-    def get_decoder(self):
-        decoder_inputs = Input(shape=(None,))
-        encoder_state = Input(shape=(self.enc_units,))
-        embeddings = Embedding(self.data.num_decoder_tokens, self.embedding_dim)(decoder_inputs)
-        decoder_outputs, decoder_state = self.decoder_layer(embeddings,
-                                                            initial_state=encoder_state)
-        decoder_dense = Dense(self.data.num_decoder_tokens, activation='softmax')
-        decoded_output = TimeDistributed(decoder_dense)(decoder_outputs)
-        decoder_model = Model([decoder_inputs, encoder_state],
-                              [decoded_output, decoder_state])
-        decoder_model.summary()
-        return decoder_model
-
-    def decode_seq(self, input_seq):
-        e_out, state = self.encoder.predict(input_seq)
-        target_seq = np.ones((input_seq.shape[0], 1))
-        target_seq = target_seq * [self.data.decoder_tokenizer.start_tkn]
-        # Sampling loop for a batch of sequences
-        decoded = None
-        for _ in range(self.data.max_decoder_seq_length):
-            output_tokens, state = self.decoder.predict([target_seq, state])
-            sampled = np.argmax(output_tokens, axis=2)
-            decoded = sampled if decoded is None else np.hstack((decoded, sampled))
-            target_seq = sampled
-        return decoded
-
-
 class Seq2seqAttention(EncoderDecoder):
 
     def __init__(self, enc_units, dec_units, data, embedding_dim=100, optimizer='adam'):
@@ -103,6 +65,7 @@ class Seq2seqAttention(EncoderDecoder):
         decoded_output, state = self.decoder([decoder_inputs] + encoder_outputs)
         self.combined = Model([encoder_inputs, decoder_inputs], decoded_output)
         self.combined.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy')
+        self.inference = self.get_inference()
 
     def get_decoder(self):
         decoder_inputs = Input(shape=(None,))
@@ -120,17 +83,20 @@ class Seq2seqAttention(EncoderDecoder):
         decoder_model.summary()
         return decoder_model
 
-    def decode_seq(self, input_seq):
-        e_out, state = self.encoder.predict(input_seq)
-        target_seq = np.ones((input_seq.shape[0], 1))
-        target_seq = target_seq * [self.data.decoder_tokenizer.start_tkn]
-        # Sampling loop for a batch of sequences
-        decoded = None
+    def get_inference(self):
+        encoder_inputs = tf.keras.layers.Input(shape=(self.data.max_encoder_seq_length,))
+        e_out, states = self.encoder(encoder_inputs)
+        target_seq = tf.ones((tf.shape(encoder_inputs)[0], 1),
+                             dtype=tf.dtypes.int64) * self.data.decoder_tokenizer.start_tkn
+        decoded = target_seq
         for _ in range(self.data.max_decoder_seq_length + 1):
-            output_tokens, state = self.decoder.predict([target_seq, e_out, state])
-            sampled = np.argmax(output_tokens, axis=2)
-            decoded = sampled if decoded is None else np.hstack((decoded, sampled))
-            target_seq = sampled
+            output_tokens, states = self.decoder([target_seq, e_out, states])
+            target_seq = tf.argmax(output_tokens, axis=-1)
+            decoded = tf.keras.layers.concatenate([decoded, target_seq])
+        return tf.keras.Model(encoder_inputs, decoded)
+
+    def decode_seq(self, input_seq):
+        decoded = self.inference.predict(input_seq)
         return decoded
 
 
