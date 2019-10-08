@@ -45,13 +45,13 @@ class Seq2seqAttention:
         return Decoder(self.data.num_decoder_tokens, self.embedding_dim, self.latent_dim)
 
     def decode_seq(self, input_seq):
-        e_out, states = self.encoder.predict(input_seq)
+        e_out, states = self.encoder(input_seq)
         target_seq = np.ones((input_seq.shape[0], 1))
         target_seq = target_seq * [self.data.decoder_tokenizer.start_tkn]
         # Sampling loop for a batch of sequences
         decoded = None
         for _ in range(self.data.max_decoder_seq_length + 1):
-            output_tokens, states = self.decoder.predict([target_seq, e_out, states])
+            output_tokens, states = self.decoder([target_seq, e_out, states])
             sampled = tf.argmax(output_tokens, axis=2).numpy()
             decoded = sampled if decoded is None else np.hstack((decoded, sampled))
             target_seq = sampled
