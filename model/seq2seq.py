@@ -52,7 +52,7 @@ class Seq2seqAttention:
         # Sampling loop for a batch of sequences
         decoded = None
         for _ in range(self.data.max_decoder_seq_length + 1):
-            output_tokens, states = self.decoder.predict([target_seq, e_out, states])
+            output_tokens, states = self.decoder.predict(target_seq, e_out, states)
             sampled = np.argmax(output_tokens, axis=2)
             decoded = sampled if decoded is None else np.hstack((decoded, sampled))
             target_seq = sampled
