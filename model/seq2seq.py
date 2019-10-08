@@ -48,13 +48,12 @@ class Seq2seqAttention:
     def get_inference_model(self):
         encoder_inputs = tf.keras.layers.Input(shape=(self.data.max_encoder_seq_length,))
         e_out, states = self.encoder(encoder_inputs)
-        target_seq = tf.ones((encoder_inputs.shape[0], 1), dtype=np.int) * [self.data.decoder_tokenizer.start_tkn]
+        target_seq = tf.ones((encoder_inputs.shape[0], 1), dtype=tf.dtypes.int64) * self.data.decoder_tokenizer.start_tkn
         decoded = target_seq
         for _ in range(self.data.max_decoder_seq_length + 1):
             output_tokens, states = self.decoder([target_seq, e_out, states])
-            sampled = tf.argmax(output_tokens, axis=-1)
-            decoded = tf.keras.layers.concatenate([decoded, sampled])
-            target_seq = sampled
+            target_seq = tf.argmax(output_tokens, axis=-1)
+            decoded = tf.keras.layers.concatenate([decoded, target_seq])
         return tf.keras.Model(encoder_inputs, decoded)
 
     def decode_seq(self, input_seq):
