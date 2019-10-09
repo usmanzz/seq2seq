@@ -5,7 +5,7 @@ from tensorflow.keras.models import Model
 import numpy as np
 import tensorflow as tf
 from abc import ABCMeta, abstractmethod
-from ..layers.attention import AttentionLayer
+# from ..layers.attention import AttentionLayer
 
 
 class EncoderDecoder(metaclass=ABCMeta):
@@ -73,9 +73,11 @@ class Seq2seqAttention(EncoderDecoder):
         encoder_outputs = Input(shape=(self.data.max_encoder_seq_length, self.dec_units))
         embeddings = Embedding(self.data.num_decoder_tokens, self.embedding_dim)(decoder_inputs)
         decoder_outputs, state = self.decoder_layer(embeddings, initial_state=encoder_state)
-        attn_layer = AttentionLayer(name='attention_layer')
-        attn_out, attn_states = attn_layer([encoder_outputs, decoder_outputs])
-        context_vectors = Concatenate()([attn_out, decoder_outputs])
+        # attn_layer = AttentionLayer(name='attention_layer')
+        # attn_out, attn_states = attn_layer([encoder_outputs, decoder_outputs])
+        attention_layer = tf.keras.layers.AdditiveAttention()
+        attention_output = attention_layer([decoder_outputs, encoder_outputs])
+        context_vectors = Concatenate()([attention_output, decoder_outputs])
         decoder_dense = Dense(self.data.num_decoder_tokens, activation='softmax')
         decoded_output = TimeDistributed(decoder_dense)(context_vectors)
         decoder_model = Model([decoder_inputs, encoder_outputs, encoder_state],
