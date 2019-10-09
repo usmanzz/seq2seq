@@ -1,5 +1,5 @@
 from __future__ import print_function
-from tensorflow.keras.layers import Input, Dense, TimeDistributed, Concatenate, Embedding, GRU
+from tensorflow.keras.layers import Input, Dense, TimeDistributed, Concatenate, Embedding, GRU, Dropout
 from tensorflow.keras.layers import Bidirectional
 from tensorflow.keras.models import Model
 import numpy as np
@@ -77,7 +77,7 @@ class Seq2seqAttention(EncoderDecoder):
         # attn_out, attn_states = attn_layer([encoder_outputs, decoder_outputs])
         attention_layer = tf.keras.layers.AdditiveAttention()
         attention_output = attention_layer([decoder_outputs, encoder_outputs])
-        context_vectors = Concatenate()([attention_output, decoder_outputs])
+        context_vectors = Dropout(0.5)(Concatenate()([attention_output, decoder_outputs]))
         decoder_dense = Dense(self.data.num_decoder_tokens, activation='softmax')
         decoded_output = TimeDistributed(decoder_dense)(context_vectors)
         decoder_model = Model([decoder_inputs, encoder_outputs, encoder_state],
