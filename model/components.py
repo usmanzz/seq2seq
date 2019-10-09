@@ -48,8 +48,8 @@ class Decoder(tf.keras.Model):
         x = self.embedding(x)
         decoder_outputs, state = self.gru(x, initial_state=[init_state])
         context_vector = self.attention([decoder_outputs, enc_output])
-        outputs = tf.keras.layers.concatenate([context_vector, decoder_outputs])
-        out = self.fc(outputs)
+        # outputs = tf.keras.layers.concatenate([context_vector, decoder_outputs])
+        out = self.fc(context_vector)
         return out, state
 
 
