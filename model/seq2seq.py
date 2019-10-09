@@ -5,7 +5,7 @@ from .components import Encoder, Decoder, BidirectionalEncoder
 
 
 class Seq2seqAttention:
-    def __init__(self, latent_dim, data, embedding_dim=100, optimizer="rmsprop"):
+    def __init__(self, latent_dim, data, embedding_dim=100, optimizer="adam"):
         self.latent_dim = latent_dim
         self.embedding_dim = embedding_dim
         self.data = data

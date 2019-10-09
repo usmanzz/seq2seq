@@ -40,7 +40,7 @@ class Decoder(tf.keras.Model):
         self.gru = tf.keras.layers.GRU(self.dec_units,
                                        return_sequences=True,
                                        return_state=True)
-        self.attention = tf.keras.layers.Attention()
+        self.attention = tf.keras.layers.AdditiveAttention()
         self.fc = tf.keras.layers.TimeDistributed(tf.keras.layers.Dense(vocab_size))
 
     def call(self, inp):
