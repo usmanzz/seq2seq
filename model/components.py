@@ -27,8 +27,8 @@ class BidirectionalEncoder(Encoder):
 
     def call(self, x):
         x = self.embedding(x)
-        outputs, state1, state2 = self.bidirectional_gru(x)
-        return outputs, tf.keras.layers.concatenate([state1, state2])
+        outputs, forward, backward = self.bidirectional_gru(x)
+        return outputs, tf.keras.layers.concatenate([forward, backward])
 
 
 class Decoder(tf.keras.Model):
