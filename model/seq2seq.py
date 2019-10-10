@@ -34,7 +34,7 @@ class Seq2seqAttention:
         self.data.decoder_tokenizer.view_data((target, decoded))
 
     def save(self, name="s2s"):
-        self.combined.save(name + '.h5')
+        self.combined.save_weights(name + '.h5')
 
     def load(self, name="s2s"):
         self.combined.load_weights(name + '.h5')
