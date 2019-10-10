@@ -1,6 +1,7 @@
 from __future__ import print_function
 import tensorflow as tf
 
+
 # tf.executing_eagerly()
 
 
@@ -12,7 +13,8 @@ class Encoder(tf.keras.Model):
         self.embedding = tf.keras.layers.Embedding(vocab_size, embedding_dim)
         self.gru = tf.keras.layers.GRU(self.enc_units,
                                        return_sequences=True,
-                                       return_state=True)
+                                       return_state=True,
+                                       recurrent_initializer='glorot_uniform')
 
     def call(self, x):
         x = self.embedding(x)
@@ -41,7 +43,7 @@ class Decoder(tf.keras.Model):
                                        return_sequences=True,
                                        return_state=True)
         self.attention = tf.keras.layers.AdditiveAttention()
-        self.fc = tf.keras.layers.Dense(vocab_size, activation="softmax")
+        self.fc = tf.keras.layers.TimeDistributed(tf.keras.layers.Dense(vocab_size))
 
     def call(self, inp):
         x, enc_output, init_state = inp
@@ -51,6 +53,10 @@ class Decoder(tf.keras.Model):
         # outputs = tf.keras.layers.concatenate([context_vector, decoder_outputs])
         out = self.fc(context_vector)
         return out, state
+
+
+def sparse_categorical_crossentropy(labels, logits):
+    return tf.keras.losses.sparse_categorical_crossentropy(labels, logits, from_logits=True)
 
 
 if __name__ == '__main__':
@@ -63,7 +69,7 @@ if __name__ == '__main__':
     decoded_output, states = decoder([decoder_inputs, output, encoder_states])
     print(decoded_output.shape, states.shape)
     combined = tf.keras.Model([encoder_inputs, decoder_inputs], decoded_output)
-    combined.compile(optimizer="adam", loss='sparse_categorical_crossentropy')
+    combined.compile(optimizer="adam", loss=sparse_categorical_crossentropy)
     combined.summary()
     # encoder.summary()
     decoder.summary()

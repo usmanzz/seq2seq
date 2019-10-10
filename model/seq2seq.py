@@ -1,7 +1,7 @@
 from __future__ import print_function
 import tensorflow as tf
 import numpy as np
-from .components import Encoder, Decoder, BidirectionalEncoder
+from .components import Encoder, Decoder, BidirectionalEncoder, sparse_categorical_crossentropy
 
 
 class Seq2seqAttention:
@@ -16,7 +16,7 @@ class Seq2seqAttention:
         output, hidden = self.encoder(encoder_inputs)
         decoded_output, states = self.decoder([decoder_inputs, output, hidden])
         self.combined = tf.keras.Model([encoder_inputs, decoder_inputs], decoded_output)
-        self.combined.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy')
+        self.combined.compile(optimizer=optimizer, loss=sparse_categorical_crossentropy)
         self.inference = self.get_inference()
         self.combined.summary()
         # self.decoder.summary()
