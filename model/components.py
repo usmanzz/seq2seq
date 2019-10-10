@@ -41,7 +41,7 @@ class Decoder(tf.keras.Model):
                                        return_sequences=True,
                                        return_state=True)
         self.attention = tf.keras.layers.AdditiveAttention()
-        self.fc = tf.keras.layers.Dense(vocab_size)
+        self.fc = tf.keras.layers.Dense(vocab_size, activation="softmax")
 
     def call(self, inp):
         x, enc_output, init_state = inp
